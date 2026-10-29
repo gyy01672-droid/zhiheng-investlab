@@ -20,8 +20,8 @@ def round_positions(candidates,weights,budget,fee_rate=.001):
     if spent>budget+.01:raise ValueError('整手换算超过预算')
     return rows,round(budget-spent,2)
 
-def allocate(budget,mode,horizon='short',stock_budget=None,rotation=0):
-    from . import advice
+def allocate(budget,mode,horizon='short',stock_budget=None,rotation=0,epsilon=0):
+    from . import advice,exploration
     budget=float(budget);rotation=int(rotation)
     if not math.isfinite(budget) or budget<=500 or budget>1e9:raise ValueError('总资金需大于500元且不超过10亿元')
     if mode not in ['stable','aggressive']:raise ValueError('请选择稳健型或进取型')
@@ -39,12 +39,14 @@ def allocate(budget,mode,horizon='short',stock_budget=None,rotation=0):
         eligible=[c for c in g['train'] if not c.startswith(('688','300','301'))]
         pool_codes.extend(eligible[(rotation+i)%len(eligible)] for i in range(min(2,len(eligible))))
     pool_codes=list(dict.fromkeys(pool_codes or list(UNIVERSE)[:20]))
+    pool_codes,exploration_info=exploration.select(pool_codes,meta,epsilon)
     def preliminary(code):
         try:
             c=advice.quantitative(code,horizon,meta)
             reason=advice.signal_rejection(c)
             if reason:raise ValueError(reason)
             if c['quote']['price']*100*1.001>target_amount:raise ValueError('目标资金不足一手')
+            c['prediction']['candidate_origin']='探索候选' if code in exploration_info['explored_codes'] else '常规候选'
             return c
         except Exception as e:failed[code]=str(e);return None
     with ThreadPoolExecutor(max_workers=4) as pool:cs=[c for c in pool.map(preliminary,pool_codes) if c]
@@ -56,9 +58,10 @@ def allocate(budget,mode,horizon='short',stock_budget=None,rotation=0):
             return c
         except Exception as e:failed[c['code']]=str(e);return None
     with ThreadPoolExecutor(max_workers=3) as pool:cs=[c for c in pool.map(review,cs[:18]) if c]
+    exploration.record(exploration_info,cs,failed,meta['version'])
     if not cs:
         out=summarize([],budget,target_amount,mode,horizon,failed,policy,'当前没有同时满足模型信号、报价、预算及咨询复核的股票；保留现金，不为填满仓位放宽筛选。'+warning,0)
-        out.update(alternatives=[],singles=[],rotation=rotation,screened=len(pool_codes),approved=0);return out
+        out.update(alternatives=[],singles=[],rotation=rotation,screened=len(pool_codes),approved=0,exploration=exploration_info);return out
     plans=[];seen=set()
     orders=[('均衡分散',cs,1.),('低下探候选',sorted(cs,key=lambda c:c['prediction']['lower']),1.8),('信号集中型',sorted(cs,key=lambda c:c['prediction']['up']-c['prediction']['down'],reverse=True),.65)]
     for title,ordered,scale in orders:
@@ -72,7 +75,7 @@ def allocate(budget,mode,horizon='short',stock_budget=None,rotation=0):
         rows,_=fill_lots([c],[target_amount/budget],budget,target_amount)
         p=summarize(rows,budget,target_amount,mode,horizon,failed,policy,'单股备选，有集中风险；通过同一咨询复核不代表保证上涨。'+warning,None)
         p.update(title=c['quote']['name']+' · 单股备选',plan_id='single-'+c['code']);singles.append(p)
-    out=dict(plans[0]);out.update(alternatives=plans,singles=singles,rotation=rotation,screened=len(pool_codes),approved=len(cs),selection_note='轮换各行业候选并重新计算，复用未过期数据；行情与模型不变时可能出现相同结果。上涨大于下跌不等于上涨超过50%，也不保证盈利。')
+    out=dict(plans[0]);out.update(exploration=exploration_info,alternatives=plans,singles=singles,rotation=rotation,screened=len(pool_codes),approved=len(cs),selection_note='轮换各行业候选并重新计算，复用未过期数据；行情与模型不变时可能出现相同结果。上涨大于下跌不等于上涨超过50%，也不保证盈利。')
     return out
 
 

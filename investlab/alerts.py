@@ -62,4 +62,8 @@ def scheduler():
                 STATE['next_scan']=datetime.fromtimestamp(next_scan,CN).isoformat(timespec='seconds')
             else:next_scan=0;STATE['next_scan']=None
         except Exception as e:STATE['last_error']=str(e)
+        try:
+            from . import bots
+            bots.tick()
+        except Exception:STATE['last_error']='机器人通知处理失败，请检查通知面板'
         time.sleep(10)

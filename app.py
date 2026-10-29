@@ -1,4 +1,5 @@
 """Local, single-user investment research app. No broker connection or trading endpoint."""
+from investlab import bots
 import json,threading,traceback,urllib.parse,mimetypes,webbrowser,sys,os,socket
 from http.server import ThreadingHTTPServer,BaseHTTPRequestHandler
 from concurrent.futures import ThreadPoolExecutor
@@ -116,7 +117,7 @@ class Handler(BaseHTTPRequestHandler):
             elif path=='/api/portfolio/manual' and mutate:
                 result=portfolio.manual(data.get('budget',0),data.get('positions',[]));store.setting('manual_portfolio',result)
             elif path=='/api/portfolio' and mutate:
-                result=portfolio.allocate(data.get('budget',0),data.get('mode',''),data.get('horizon','short'),data.get('stock_budget'),data.get('rotation',0));result['rebalance']=research.rebalance(result)
+                result=portfolio.allocate(data.get('budget',0),data.get('mode',''),data.get('horizon','short'),data.get('stock_budget'),data.get('rotation',0),data.get('epsilon',0));result['rebalance']=research.rebalance(result)
                 for candidate in result.get('alternatives',[])+result.get('singles',[]):candidate['rebalance']=research.rebalance(candidate)
                 store.setting('last_recommendation',{'at':stamp(),'result':result})
             elif path=='/api/scan' and mutate:result=alerts.scan()
@@ -128,6 +129,10 @@ class Handler(BaseHTTPRequestHandler):
                         if not isinstance(data[k],bool):raise ValueError('设置必须是开关值')
                         store.setting(k,data[k])
                 result={'ok':True}
+            elif path=='/api/bots' and not mutate:result=bots.status()
+            elif path=='/api/bots' and mutate:result=bots.save(data)
+            elif path=='/api/bots/test' and mutate:result=bots.tick(test=True)
+            elif path=='/api/bots/retry' and mutate:result=bots.tick(retry=True)
             elif path=='/api/news/check' and not mutate:result=public_news.check()
             elif path=='/api/train' and mutate:
                 if models.STATUS['running']:raise ValueError('训练已在进行')
@@ -137,7 +142,7 @@ class Handler(BaseHTTPRequestHandler):
                 background(lambda:updates.run(train=bool(data.get('train')),refresh_universe=bool(data.get('refresh_universe'))));result={'message':'自动更新流程已启动'}
             elif path=='/api/activate' and mutate:models.activate(str(data.get('version','')));result={'ok':True}
             elif path=='/api/llm/start' and mutate:result=llm.start()
-            elif path in ['/','/style.css','/main.js','/enhancements.js','/course.js','/allocation.js','/welcome.js'] and not mutate:
+            elif path in ['/','/style.css','/main.js','/enhancements.js','/course.js','/allocation.js','/welcome.js','/bots.js'] and not mutate:
                 file=ROOT/'web'/('index.html' if path=='/' else path[1:]);raw=file.read_bytes()
                 self.send_response(200);self.send_header('Content-Type',(mimetypes.guess_type(str(file))[0] or 'application/octet-stream')+'; charset=utf-8');self.send_header('Content-Length',str(len(raw)));self.send_header('X-Content-Type-Options','nosniff');self.send_header('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'");self.end_headers();self.wfile.write(raw);return
             else:return self.reply({'error':'接口不存在'},404)
