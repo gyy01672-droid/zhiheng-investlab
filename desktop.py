@@ -14,6 +14,9 @@ def main():
     import app
     from investlab import models,llm,store,alerts,updates
     if '--self-test' in sys.argv:
+        import urllib.request
+        if '--network-check' in sys.argv:
+            with urllib.request.urlopen('https://qt.gtimg.cn/q=sh600851',timeout=30) as response:print('HTTPS',response.status,flush=True)
         import numpy as np,lightgbm as lgb
         from scipy.optimize import minimize
         from sklearn.covariance import LedoitWolf

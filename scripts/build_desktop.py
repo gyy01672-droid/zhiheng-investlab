@@ -4,6 +4,9 @@ import subprocess,sys,shutil,json
 ROOT=Path(__file__).resolve().parents[1]
 subprocess.run([sys.executable,'-m','PyInstaller','--noconfirm','--onedir','--windowed','--name','InvestLab','--distpath',str(ROOT/'output/desktop'),'--workpath',str(ROOT/'tmp/freeze'),'--specpath',str(ROOT/'tmp'),'--collect-all','lightgbm','--collect-submodules','sklearn','--hidden-import','tkinter','--exclude-module','pytest',str(ROOT/'desktop.py')],cwd=ROOT,check=True)
 out=ROOT/'output/desktop/InvestLab'
+# Preserve additional certificate policy data used by this Python distribution.
+ssl_data=Path(sys.base_prefix)/'Lib/codex-rejected-cas.pem'
+if ssl_data.exists():shutil.copy2(ssl_data,out/'_internal/codex-rejected-cas.pem')
 for name in ['web','licenses']:shutil.copytree(ROOT/name,out/name,dirs_exist_ok=True)
 shutil.copytree(ROOT/'runtime/llama',out/'runtime/llama',dirs_exist_ok=True)
 (out/'models').mkdir(exist_ok=True)
