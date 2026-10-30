@@ -2,8 +2,13 @@
 from pathlib import Path
 import subprocess,sys,shutil,json
 ROOT=Path(__file__).resolve().parents[1]
-subprocess.run([sys.executable,'-m','PyInstaller','--noconfirm','--onedir','--windowed','--name','InvestLab','--distpath',str(ROOT/'output/desktop'),'--workpath',str(ROOT/'tmp/freeze'),'--specpath',str(ROOT/'tmp'),'--collect-all','lightgbm','--collect-submodules','sklearn','--hidden-import','tkinter','--exclude-module','pytest',str(ROOT/'desktop.py')],cwd=ROOT,check=True)
-out=ROOT/'output/desktop/InvestLab'
+if '--resources-only' not in sys.argv:subprocess.run([sys.executable,'-m','PyInstaller','--noconfirm','--onedir','--windowed','--name','InvestLab','--distpath',str(ROOT/'output/embedded'),'--workpath',str(ROOT/'tmp/freeze'),'--specpath',str(ROOT/'tmp'),'--collect-all','lightgbm','--collect-submodules','sklearn','--hidden-import','PySide6.QtWebEngineWidgets','--exclude-module','pytest',str(ROOT/'desktop.py')],cwd=ROOT,check=True)
+out=ROOT/'output/embedded/InvestLab'
+# Qt 6.12 imports the Windows ICU API. PyInstaller can incorrectly collect an
+# unrelated ICU 78 from the build host PATH, shadowing that OS API.
+for name in ['icuuc.dll','icudt78.dll']:
+    wrong=out/'_internal'/name
+    if wrong.exists():wrong.unlink()
 # Preserve additional certificate policy data used by this Python distribution.
 ssl_data=Path(sys.base_prefix)/'Lib/codex-rejected-cas.pem'
 if ssl_data.exists():shutil.copy2(ssl_data,out/'_internal/codex-rejected-cas.pem')

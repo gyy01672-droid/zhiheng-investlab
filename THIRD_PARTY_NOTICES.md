@@ -9,3 +9,6 @@
 - Python 运行时使用 PSF 许可及附属许可；PyInstaller 引导程序遵循其许可证与分发例外。Tk/Tcl 许可随运行时及 licenses 保存。
 
 使用腾讯证券公开行情、东方财富公开新闻和公告、新浪公开数据，不代表获得它们的背书或永久服务承诺。公开仓库不包含完整行情训练快照、个人账户记录、私有凭据、教师原始 PDF 或原始 Word 模板。
+
+## 内嵌桌面界面
+PySide6 / Qt 6.12（LGPL/GPL/商业多许可，使用适用LGPL发行组件）及 Qt WebEngine / Chromium，许可证随 licenses 目录及运行库提供。Qt组件动态链接，可替换兼容版本；本项目不限制为调试这些组件而进行的逆向工程。官方源码及许可：https://code.qt.io/ ，https://doc.qt.io/qt-6/licenses-used-in-qt.html 。
