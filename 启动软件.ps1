@@ -1,6 +1,6 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $projectFolder = $PSScriptRoot
-$portable = Join-Path $projectFolder 'output\embedded\InvestLab\InvestLab.exe'
+$portable = Join-Path $projectFolder 'output\icon-desktop\InvestLab\InvestLab.exe'
 if (Test-Path -LiteralPath $portable) {
     Start-Process -FilePath $portable -WorkingDirectory (Split-Path $portable) -WindowStyle Normal
     exit

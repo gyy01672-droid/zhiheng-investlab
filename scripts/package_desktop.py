@@ -2,7 +2,7 @@
 from pathlib import Path
 import zipfile,hashlib,json,shutil
 ROOT=Path(__file__).resolve().parents[1]
-bundle=ROOT/'output/embedded/InvestLab';out=ROOT/'output/release';out.mkdir(exist_ok=True)
+bundle=ROOT/'output/icon-desktop/InvestLab';out=ROOT/'output/release';out.mkdir(exist_ok=True)
 allowed=['InvestLab.exe','_internal','licenses','models','runtime','seed','web','便携版使用说明.md','THIRD_PARTY_NOTICES.md']
 files=[]
 for name in allowed:
